@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jogo de Tiro ao Alvo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body, html { width: 100%; height: 100%; font-family: sans-serif; }
+
+    #menu, #game, #game-over {
+      display: none;
+      width: 100%; height: 100%;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      background: url('background.jpg') center/cover no-repeat;
+    }
+
+    #menu.active, #game.active, #game-over.active {
+      display: flex;
+    }
+
+    button {
+      padding: 10px 20px;
+      margin-top: 10px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    #game canvas {
+      border: 2px solid #000;
+      background: #e0e0e0;
+    }
+
+    #score {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 24px;
+      background: rgba(255,255,255,0.7);
+      padding: 5px 10px;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div id="menu" class="active">
+    <h1>Jogo de Tiro ao Alvo</h1>
+    <input type="text" id="player-name" placeholder="Digite seu nome" />
+    <button onclick="startGame()">Iniciar Jogo</button>
+  </div>
+
+  <div id="game">
+    <div id="score">Pontos: 0 | Tempo: 30</div>
+    <canvas id="game-canvas" width="800" height="600"></canvas>
+  </div>
+
+  <div id="game-over">
+    <h1>Fim de Jogo</h1>
+    <p id="final-score"></p>
+    <button onclick="returnToMenu()">Voltar ao Menu</button>
+  </div>
+
+  <script>
+    const menu = document.getElementById('menu');
+    const game = document.getElementById('game');
+    const gameOver = document.getElementById('game-over');
+    const canvas = document.getElementById('game-canvas');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const finalScoreEl = document.getElementById('final-score');
+    const playerNameInput = document.getElementById('player-name');
+
+    let score = 0;
+    let timeLeft = 30;
+    let targets = [];
+    let gameInterval;
+    let timerInterval;
+
+    function startGame() {
+      const name = playerNameInput.value.trim();
+      if (!name) {
+        alert('Digite seu nome para começar!');
+        return;
+      }
+
+      menu.classList.remove('active');
+      gameOver.classList.remove('active');
+      game.classList.add('active');
+
+      score = 0;
+      timeLeft = 30;
+      targets = [];
+      scoreEl.textContent = `Pontos: ${score} | Tempo: ${timeLeft}`;
+
+      gameInterval = setInterval(gameLoop, 1000 / 60);
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        scoreEl.textContent = `Pontos: ${score} | Tempo: ${timeLeft}`;
+        if (timeLeft <= 0) endGame();
+      }, 1000);
+
+      spawnTarget();
+    }
+
+    function endGame() {
+      clearInterval(gameInterval);
+      clearInterval(timerInterval);
+      game.classList.remove('active');
+      gameOver.classList.add('active');
+      finalScoreEl.textContent = `${playerNameInput.value}, sua pontuação foi: ${score}`;
+    }
+
+    function returnToMenu() {
+      menu.classList.add('active');
+      gameOver.classList.remove('active');
+    }
+
+    function spawnTarget() {
+      const x = Math.random() * (canvas.width - 50);
+      const y = Math.random() * (canvas.height - 50);
+      targets.push({ x, y, size: 40 });
+
+      setTimeout(spawnTarget, 1000);
+    }
+
+    canvas.addEventListener('click', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      targets = targets.filter(t => {
+        const hit = Math.hypot(t.x + t.size/2 - mouseX, t.y + t.size/2 - mouseY) < t.size;
+        if (hit) score++;
+        return !hit;
+      });
+    });
+
+    function gameLoop() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      targets.forEach(t => {
+        ctx.beginPath();
+        ctx.fillStyle = 'red';
+        ctx.arc(t.x + t.size / 2, t.y + t.size / 2, t.size / 2, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+  </script>
+</body>
+</html>
